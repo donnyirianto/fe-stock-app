@@ -10,7 +10,12 @@ import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 
 import Button from '@mui/material/Button'
-import Divider from '@mui/material/Divider'
+import CircularProgress from '@mui/material/CircularProgress'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -37,12 +42,14 @@ import { useSettings } from '@core/hooks/useSettings'
 
 import { signInSchema } from '@/lib/zod'
 import ErrorMessage from '@/components/error-message'
-import { handleCredentialsSignin } from '@/app/api/auth/authActions'
+import { handleCredentialsSignin } from '@/app/api/auth/signin'
 
 const LoginV2 = ({ mode }: { mode: Mode }) => {
   // States
   const [globalError, setGlobalError] = useState<string>('')
   const [isPasswordShown, setIsPasswordShown] = useState(false)
+  const [isLoading, setIsLoading] = useState(false) // State untuk loading
+  const [openDialog, setOpenDialog] = useState(false)
 
   // Vars
   const darkImg = '/images/pages/auth-v2-mask-1-dark.png'
@@ -74,15 +81,24 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
 
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
+  const handleDialogClose = () => {
+    setOpenDialog(false)
+  }
+
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
     try {
+      setIsLoading(true)
       const result = await handleCredentialsSignin(values)
 
       if (result?.message) {
         setGlobalError(result.message)
+        setOpenDialog(true)
       }
     } catch (error) {
-      alert('An unexpected error occurred. Please try again.')
+      setGlobalError('Server Sedang Sibuk, Silahkan coba beberapa saat lagi!')
+      setOpenDialog(true)
+    } finally {
+      setIsLoading(false) // Matikan loading setelah request selesai
     }
   }
 
@@ -149,13 +165,28 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
                 )
               }}
             />
-            <Button fullWidth variant='contained' type='submit'>
-              Log In
+            <Button fullWidth variant='contained' type='submit' disabled={isLoading}>
+              {isLoading ? <CircularProgress size={24} color='inherit' /> : 'Sign In'}
             </Button>
           </form>
         </div>
-        <Divider className='gap-3 text-textPrimary'>--</Divider>
       </div>
+      <Dialog open={openDialog} onClose={handleDialogClose}>
+        <DialogTitle style={{ display: 'flex', alignItems: 'center', padding: '16px 24px' }}>
+          <WarningAmberIcon fontSize='large' color='error' style={{ marginRight: 16 }} />
+          <Typography variant='h5' color='error' style={{ fontWeight: 600 }}>
+            Login Gagal
+          </Typography>
+        </DialogTitle>
+        <DialogContent style={{ padding: '20px 24px' }}>
+          <Typography variant='body1'>{globalError}</Typography>
+        </DialogContent>
+        <DialogActions style={{ padding: '16px 24px' }}>
+          <Button onClick={handleDialogClose} color='primary'>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   )
 }

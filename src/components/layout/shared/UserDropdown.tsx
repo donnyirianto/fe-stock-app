@@ -20,7 +20,7 @@ import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
@@ -75,9 +75,23 @@ const UserDropdown = () => {
   }
 
   const handleUserLogout = async () => {
-    setOpen(false) // Close dialog first
-    // Redirect to login page
-    await signOut()
+    try {
+      setOpen(false) // Close dialog first
+
+      // Redirect to login page
+      const res = await fetch('/api/auth/signout', {
+        method: 'POST'
+      })
+
+      if (res.ok) {
+        // Redirect ke halaman login setelah logout berhasil
+        router.push('/login')
+      } else {
+        console.error('Failed to sign out:', await res.json())
+      }
+    } catch (error) {
+      console.error('Error during sign out:', error)
+    }
   }
 
   return (

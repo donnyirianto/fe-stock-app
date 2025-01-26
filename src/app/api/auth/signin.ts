@@ -2,7 +2,7 @@
 
 import { AuthError } from 'next-auth'
 
-import { signIn, signOut } from '@/auth'
+import { signIn } from '@/auth'
 
 export async function handleCredentialsSignin({ username, password }: { username: string; password: string }) {
   try {
@@ -14,19 +14,15 @@ export async function handleCredentialsSignin({ username, password }: { username
       switch (error.type) {
         case 'CredentialsSignin':
           return {
-            message: 'Invalid credentials'
+            message: 'User / Password tidak sesuai!'
           }
         default:
           return {
-            message: 'Something went wrong.'
+            message: 'Server Sedang Sibuk, Silahkan coba beberapa saat lagi!'
           }
       }
     }
 
     throw error
   }
-}
-
-export async function handleSignOut() {
-  await signOut()
 }
