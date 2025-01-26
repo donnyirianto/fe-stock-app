@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
+import { ZodError } from 'zod'
 
 import { signInSchema } from '@/lib/zod'
 
@@ -7,42 +8,65 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        email: { label: 'Email', type: 'email', placeholder: 'Email' },
+        username: { label: 'Username', type: 'text', placeholder: 'Username' },
         password: { label: 'Password', type: 'password', placeholder: 'Password' }
       },
-      async authorize(credentials) {
-        let user = null
+      authorize: async credentials => {
+        try {
+          // Kirim request ke API backend
 
-        // validate credentials
-        const parsedCredentials = signInSchema.safeParse(credentials)
+          const parsedCredentials = signInSchema.safeParse(credentials)
 
-        if (!parsedCredentials.success) {
-          console.error('Invalid credentials:', parsedCredentials.error.errors)
+          if (!parsedCredentials.success) {
+            console.error('Invalid credentials:', parsedCredentials.error.errors)
 
-          return null
-        }
-
-        // get user
-        const { email, password } = parsedCredentials.data
-
-        if (email === 'admin@gmail.com' && password === 'admin123456') {
-          user = {
-            id: '1',
-            name: 'Aditya Singh',
-            email: 'admin',
-            role: 'admin'
+            return null
           }
-        }
 
-        console.log('User berhasil login')
+          // get user
+          const { username, password } = parsedCredentials.data
 
-        if (!user) {
-          console.log('Invalid credentials')
+          const res = await fetch(`${process.env.API_BASE_URL}/api/v1/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: username,
+              password: password
+            })
+          })
+
+          if (!res.ok) {
+            console.error('Failed to authenticate')
+
+            return null
+          }
+
+          const result = await res.json()
+
+          if (result.code === 200 && result.status === 'success') {
+            // Return user data sesuai respons API backend
+            return {
+              username: result.data.username,
+              nama: result.data.nama,
+              role: result.data.role,
+              accessToken: result.data.token,
+              refreshToken: result.data['refresh-token']
+            }
+          } else {
+            console.error('Authentication failed:', result.message)
+
+            return null
+          }
+        } catch (error) {
+          if (error instanceof ZodError) {
+            // Return `null` to indicate that the credentials are invalid
+            return null
+          }
+
+          console.error('Unexpected error:', error)
 
           return null
         }
-
-        return user
       }
     })
   ],
@@ -57,26 +81,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       return !!auth
     },
-    jwt({ token, user, trigger, session }) {
-      if (user) {
-        token.id = user.id as string
-        token.email = user.email as string
-        token.name = user.name as string
-        token.role = user.role as string
+    async jwt({
+      token,
+      user
+    }: {
+      token: any
+      user?: {
+        username: string
+        nama: string
+        role: string
+        accessToken: string
+        refreshToken: string
       }
-
-      if (trigger === 'update' && session) {
-        token = { ...token, ...session }
+    }) {
+      if (user) {
+        token.username = user.username
+        token.nama = user.nama
+        token.role = user.role
+        token.accessToken = user.accessToken
+        token.refreshToken = user.refreshToken
       }
 
       return token
     },
-    session({ session, token }) {
-      session.user = {
-        id: token.id ?? null,
-        name: token.name ?? null,
-        email: token.email ?? null,
-        role: token.role ?? 'user'
+    async session({ session, token }: { session: any; token: any }) {
+      if (token) {
+        session.user = {
+          username: token.username,
+          nama: token.nama,
+          role: token.role
+        }
+        session.accessToken = token.accessToken
+        session.refreshToken = token.refreshToken
       }
 
       return session
@@ -84,5 +120,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   pages: {
     signIn: '/login'
-  }
+  },
+  secret: process.env.NEXTAUTH_SECRET
 })

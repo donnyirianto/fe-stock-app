@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getSession, signOut } from 'next-auth/react'
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:7111', // URL backend Anda
+  baseURL: process.env.API_BASE_URL, // URL backend Anda
   headers: {
     'Content-Type': 'application/json'
   }

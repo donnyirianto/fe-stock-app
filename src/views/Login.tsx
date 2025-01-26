@@ -55,7 +55,7 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: ''
     }
   })
@@ -122,10 +122,10 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
             <TextField
               autoFocus
               fullWidth
-              label='Email'
-              {...form.register('email')}
-              error={!!form.formState.errors.email}
-              helperText={form.formState.errors.email?.message}
+              label='username'
+              {...form.register('username')}
+              error={!!form.formState.errors.username}
+              helperText={form.formState.errors.username?.message}
             />
             <TextField
               fullWidth

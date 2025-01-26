@@ -21,6 +21,11 @@ import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
 import { useSession, signOut } from 'next-auth/react'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
 
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
@@ -40,6 +45,10 @@ const UserDropdown = () => {
 
   // States
   const [open, setOpen] = useState(false)
+  const [openDialog, setOpenDialog] = useState(false)
+
+  const handleOpenDialog = () => setOpenDialog(true)
+  const handleCloseDialog = () => setOpenDialog(false)
 
   // Refs
   const anchorRef = useRef<HTMLDivElement>(null)
@@ -66,6 +75,7 @@ const UserDropdown = () => {
   }
 
   const handleUserLogout = async () => {
+    setOpen(false) // Close dialog first
     // Redirect to login page
     await signOut()
   }
@@ -112,9 +122,9 @@ const UserDropdown = () => {
                     <Avatar alt='John Doe' src='/images/avatars/1.png' />
                     <div className='flex items-start flex-col'>
                       <Typography variant='body2' className='font-medium' color='text.primary'>
-                        {session?.user?.name}
+                        {session?.user?.nama}
                       </Typography>
-                      <Typography variant='caption'>{session?.user?.email}</Typography>
+                      <Typography variant='caption'>{session?.user?.username}</Typography>
                     </div>
                   </div>
                   <Divider className='mlb-1' />
@@ -133,9 +143,9 @@ const UserDropdown = () => {
                       color='error'
                       size='small'
                       endIcon={<i className='ri-logout-box-r-line' />}
-                      onClick={handleUserLogout}
+                      onClick={handleOpenDialog}
                     >
-                      Logout
+                      Sign Out
                     </Button>
                   </div>
                 </MenuList>
@@ -144,6 +154,26 @@ const UserDropdown = () => {
           </Fade>
         )}
       </Popper>
+      {/* Dialog for confirmation */}
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        aria-labelledby='logout-dialog-title'
+        aria-describedby='logout-dialog-description'
+      >
+        <DialogTitle id='logout-dialog-title'>Konfirmasi</DialogTitle>
+        <DialogContent>
+          <DialogContentText id='logout-dialog-description'>Apakah Anda yakin ingin Sign Out?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color='primary'>
+            Cancel
+          </Button>
+          <Button onClick={handleUserLogout} color='error' autoFocus>
+            Sign Out
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }

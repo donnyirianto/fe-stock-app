@@ -4,9 +4,9 @@ import { AuthError } from 'next-auth'
 
 import { signIn, signOut } from '@/auth'
 
-export async function handleCredentialsSignin({ email, password }: { email: string; password: string }) {
+export async function handleCredentialsSignin({ username, password }: { username: string; password: string }) {
   try {
-    const usersData = await signIn('credentials', { email, password, redirectTo: '/home' })
+    const usersData = await signIn('credentials', { username, password, redirectTo: '/home' })
 
     return usersData
   } catch (error) {

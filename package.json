@@ -2,7 +2,7 @@
   "name": "stock-app",
   "version": "1.0.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 8080",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
