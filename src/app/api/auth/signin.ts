@@ -2,7 +2,7 @@
 
 import { AuthError } from 'next-auth'
 
-import { signIn } from '@/auth'
+import { signIn } from '@/lib/auth'
 
 export async function handleCredentialsSignin({ username, password }: { username: string; password: string }) {
   try {

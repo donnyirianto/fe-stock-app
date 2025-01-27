@@ -1,31 +1,31 @@
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { createSlice } from '@reduxjs/toolkit'
 
-interface User {
+interface Menu {
   id: string
   name: string
   email: string
   role: string
 }
 
-interface UsersState {
-  users: User[]
+interface menuState {
+  menu: Menu[]
   loading: boolean
   error: string | null
 }
 
-const initialState: UsersState = {
-  users: [],
+const initialState: menuState = {
+  menu: [],
   loading: false,
   error: null
 }
 
-const usersSlice = createSlice({
-  name: 'users',
+const menuSlice = createSlice({
+  name: 'menu',
   initialState,
   reducers: {
-    setUsers: (state, action: PayloadAction<User[]>) => {
-      state.users = action.payload
+    setmenu: (state, action: PayloadAction<Menu[]>) => {
+      state.menu = action.payload
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload
@@ -36,5 +36,5 @@ const usersSlice = createSlice({
   }
 })
 
-export const { setUsers, setLoading, setError } = usersSlice.actions
-export default usersSlice.reducer
+export const { setmenu, setLoading, setError } = menuSlice.actions
+export default menuSlice.reducer
