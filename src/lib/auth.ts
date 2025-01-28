@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { ZodError } from 'zod'
+import { decodeJwt } from 'jose' // Gunakan fungsi decodeJwt dari jose
 
 import { signInSchema } from '@/lib/zod'
 
@@ -100,6 +101,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = user.role
         token.accessToken = user.accessToken
         token.refreshToken = user.refreshToken
+
+        const decoded = decodeJwt(user.accessToken)
+
+        token.exp = decoded.exp
+      }
+
+      if (Date.now() > token.exp * 1000) {
+        try {
+          const res = await fetch(`${process.env.API_BASE_URL}/auth/refresh-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken: token.refreshToken })
+          })
+
+          const refreshedTokens = await res.json()
+
+          if (!res.ok) throw new Error('Gagal refresh token')
+
+          token.accessToken = refreshedTokens.accessToken
+          token.refreshToken = refreshedTokens.refreshToken
+          const decoded = decodeJwt(refreshedTokens.accessToken)
+
+          token.exp = decoded.exp
+        } catch (error) {
+          return null // Token tidak bisa diperbarui
+        }
       }
 
       return token
@@ -120,6 +147,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   pages: {
     signIn: '/login'
+  },
+  session: {
+    strategy: 'jwt'
   },
   secret: process.env.NEXTAUTH_SECRET
 })

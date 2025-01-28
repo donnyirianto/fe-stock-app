@@ -8,6 +8,7 @@ const apiClient = axios.create({
   }
 })
 
+// Interceptor untuk request
 apiClient.interceptors.request.use(async config => {
   const session = await getSession()
 
@@ -18,33 +19,37 @@ apiClient.interceptors.request.use(async config => {
   return config
 })
 
+// Interceptor untuk response
 apiClient.interceptors.response.use(
-  response => response, // Jika respons berhasil, kembalikan langsung
+  response => response, // Kembalikan response langsung jika sukses
   async error => {
     const originalRequest = error.config
 
+    // Jika error 401 dan request belum di-retry
     if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
+      originalRequest._retry = true // Tandai request sudah di-retry
 
       try {
-        // Refresh token
+        // Memperbarui session untuk mendapatkan access token baru
         const refreshResponse = await axios.get('/api/auth/session?update')
 
         if (refreshResponse.status === 200) {
-          const newSession = await getSession() // Perbarui session
+          const newSession = await getSession() // Dapatkan session terbaru
 
-          originalRequest.headers.Authorization = `Bearer ${newSession?.accessToken}`
+          if (newSession?.accessToken) {
+            // Perbarui Authorization header dengan token baru
+            originalRequest.headers.Authorization = `Bearer ${newSession.accessToken}`
 
-          return apiClient(originalRequest) // Ulangi request dengan token baru
+            // Ulangi request sebelumnya
+            return apiClient(originalRequest)
+          }
         }
       } catch (refreshError) {
-        await signOut() // Logout jika refresh token gagal
-
-        return Promise.reject(refreshError)
+        await signOut({ redirectTo: '/login' })
       }
     }
 
-    return Promise.reject(error) // Propagate error jika bukan 401
+    return Promise.reject(error) // Kembalikan error untuk status selain 401
   }
 )
 
