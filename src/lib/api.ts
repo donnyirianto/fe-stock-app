@@ -1,16 +1,19 @@
 import axios from 'axios'
-import { getSession, signOut } from 'next-auth/react'
+import { signOut } from 'next-auth/react'
+
+import { auth } from './auth'
 
 const apiClient = axios.create({
   baseURL: process.env.API_BASE_URL, // URL backend Anda
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true
 })
 
 // Interceptor untuk request
 apiClient.interceptors.request.use(async config => {
-  const session = await getSession()
+  const session = await auth()
 
   if (session?.accessToken) {
     config.headers.Authorization = `Bearer ${session.accessToken}`
@@ -31,10 +34,10 @@ apiClient.interceptors.response.use(
 
       try {
         // Memperbarui session untuk mendapatkan access token baru
-        const refreshResponse = await axios.get('/api/auth/session?update')
+        const refreshResponse = await apiClient.get('/auth/refresh-token')
 
         if (refreshResponse.status === 200) {
-          const newSession = await getSession() // Dapatkan session terbaru
+          const newSession = await auth() // Dapatkan session terbaru
 
           if (newSession?.accessToken) {
             // Perbarui Authorization header dengan token baru

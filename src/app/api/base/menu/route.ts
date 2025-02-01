@@ -1,63 +1,24 @@
 import { NextResponse } from 'next/server'
 
+import apiClient from '@/lib/api'
 import type { VerticalMenuDataType } from '@/types/menuTypes'
 
 export async function GET() {
   try {
+    const refreshResponse = await apiClient.get('/base/menu')
+
+    if (refreshResponse.status != 200) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Get Menu Error '
+        },
+        { status: refreshResponse.status }
+      )
+    }
+
     // Data menu
-    const menuData: VerticalMenuDataType[] = [
-      {
-        label: 'Dashboards & Apps',
-        isSection: true,
-        children: [
-          {
-            label: 'Dashboards',
-            children: [
-              {
-                label: 'Analytics'
-              },
-              {
-                label: 'eCommerce'
-              }
-            ]
-          },
-          {
-            label: 'Calendar'
-          }
-        ]
-      },
-      {
-        label: 'Others',
-        isSection: true,
-        children: [
-          {
-            label: 'FAQ'
-          },
-          {
-            label: 'Menu Level',
-            children: [
-              {
-                label: 'Menu Level 2.1'
-              },
-              {
-                label: 'Menu Level 2.2',
-                children: [
-                  {
-                    label: 'Menu Level 3.1'
-                  },
-                  {
-                    label: 'Menu Level 3.2'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Documentation'
-          }
-        ]
-      }
-    ]
+    const menuData: VerticalMenuDataType[] = refreshResponse.data.data.menu
 
     // Kirim respons sukses ke client
     return NextResponse.json(
@@ -69,8 +30,6 @@ export async function GET() {
       { status: 200 }
     )
   } catch (error) {
-    console.error('Error fetching menu data:', error)
-
     // Kirim respons error
     return NextResponse.json(
       {

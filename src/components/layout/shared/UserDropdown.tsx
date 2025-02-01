@@ -7,6 +7,8 @@ import type { MouseEvent } from 'react'
 // Next Imports
 import { useRouter } from 'next/navigation'
 
+import { useDispatch } from 'react-redux'
+
 // MUI Imports
 import { styled } from '@mui/material/styles'
 import Badge from '@mui/material/Badge'
@@ -26,6 +28,8 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
+
+import { resetState } from '@/store/resetSlice'
 
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
@@ -74,17 +78,21 @@ const UserDropdown = () => {
     setOpen(false)
   }
 
+  const dispatch = useDispatch()
+
   const handleUserLogout = async () => {
     try {
       setOpen(false) // Close dialog first
 
       // Redirect to login page
-      const res = await fetch('/api/auth/signout', {
+      const res = await fetch(`/api/auth/signout`, {
         method: 'POST'
       })
 
       if (res.ok) {
         // Redirect ke halaman login setelah logout berhasil
+        dispatch(resetState())
+        console.log('reset state')
         router.push('/login')
       } else {
         console.error('Failed to sign out:', await res.json())

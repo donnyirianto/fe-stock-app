@@ -1,3 +1,5 @@
+import { ReduxProvider } from '@/store/Provider'
+
 // Third-party Imports
 import 'react-perfect-scrollbar/dist/css/styles.css'
 
@@ -20,7 +22,9 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <html id='__next' lang='en' dir={direction}>
-      <body className='flex is-full min-bs-full flex-auto flex-col'>{children}</body>
+      <body className='flex is-full min-bs-full flex-auto flex-col'>
+        <ReduxProvider>{children}</ReduxProvider>
+      </body>
     </html>
   )
 }

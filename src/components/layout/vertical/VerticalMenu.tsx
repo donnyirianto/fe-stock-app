@@ -1,10 +1,15 @@
 // MUI Imports
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+
+import { useDispatch, useSelector } from 'react-redux'
 
 import { useTheme } from '@mui/material/styles'
 
 // Third-party Imports
 import PerfectScrollbar from 'react-perfect-scrollbar'
+
+import { fetchMenu } from '@/store/base/menuSlice'
+import type { RootState, AppDispatch } from '@/store/store'
 
 // Type Imports
 import { GenerateVerticalMenu } from '@components/GenerateMenu'
@@ -52,37 +57,14 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
 
   const ScrollWrapper = isBreakpointReached ? 'div' : PerfectScrollbar
 
-  const [sidebarMenuData, setSidebarMenuData] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const dispatch = useDispatch<AppDispatch>()
+  const { data: menu, loading, error } = useSelector((state: RootState) => state.menu)
 
   useEffect(() => {
-    const fetchMenuData = async () => {
-      try {
-        setIsLoading(true)
-        setError(null) // Reset error state sebelum fetch
-        const response = await fetch('/api/base/menu')
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch: ${response.statusText}`)
-        }
-
-        const data = await response.json()
-
-        if (!data.success) {
-          throw new Error(data.message || 'An error occurred')
-        }
-
-        setSidebarMenuData(data.data)
-      } catch (err: any) {
-        setError(err.message || 'An error occurred')
-      } finally {
-        setIsLoading(false)
-      }
+    if (!menu || menu.length === 0) {
+      dispatch(fetchMenu())
     }
-
-    fetchMenuData()
-  }, [])
+  }, [dispatch, menu])
 
   return (
     // eslint-disable-next-line lines-around-comment
@@ -98,22 +80,6 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
             onScrollY: container => scrollMenu(container, true)
           })}
     >
-      {/* Incase you also want to scroll NavHeader to scroll with Vertical Menu, remove NavHeader from above and paste it below this comment */}
-      {/* Vertical Menu */}
-      {/* <Menu
-        popoutMenuOffset={{ mainAxis: 17 }}
-        menuItemStyles={menuItemStyles(verticalNavOptions, theme)}
-        renderExpandIcon={({ open }) => <RenderExpandIcon open={open} transitionDuration={transitionDuration} />}
-        renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
-        menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
-      >
-        <MenuItem href='/home' icon={<i className='ri-home-smile-line' />}>
-          Home
-        </MenuItem>
-        <MenuItem href='/about' icon={<i className='ri-information-line' />}>
-          About 3
-        </MenuItem>
-      </Menu> */}
       <Menu
         popoutMenuOffset={{ mainAxis: 17 }}
         menuItemStyles={menuItemStyles(verticalNavOptions, theme)}
@@ -121,14 +87,12 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
         renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
-        {isLoading ? (
+        {loading ? (
           <div className='p-4'>Loading...</div>
         ) : error ? (
           <div>Error: {error}</div>
         ) : (
-          <Menu>
-            <GenerateVerticalMenu menuData={sidebarMenuData} />
-          </Menu>
+          <GenerateVerticalMenu menuData={menu} />
         )}
       </Menu>
     </ScrollWrapper>

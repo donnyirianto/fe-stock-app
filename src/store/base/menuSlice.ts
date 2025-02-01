@@ -1,40 +1,55 @@
-import type { PayloadAction } from '@reduxjs/toolkit'
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 
-interface Menu {
-  id: string
-  name: string
-  email: string
-  role: string
-}
+import type { RootState } from '@/store/store'
 
-interface menuState {
-  menu: Menu[]
-  loading: boolean
-  error: string | null
-}
+// Thunk untuk fetch data menu dari backend
+export const fetchMenu = createAsyncThunk('menu/fetchMenu', async (_, { getState, rejectWithValue }) => {
+  try {
+    const state = getState() as RootState
 
-const initialState: menuState = {
-  menu: [],
+    if (state.menu?.data?.length > 0) {
+      return state.menu.data
+    }
+
+    const response = await fetch(`/api/base/menu`) // Request ke API Route
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`)
+    }
+
+    const data = await response.json() // Ubah response ke JSON
+
+    return data
+  } catch (error: any) {
+    return rejectWithValue(error.message || 'Gagal mengambil data menu')
+  }
+})
+
+const initialState = {
+  data: [] as any[],
   loading: false,
-  error: null
+  error: null as string | null
 }
 
 const menuSlice = createSlice({
   name: 'menu',
   initialState,
-  reducers: {
-    setmenu: (state, action: PayloadAction<Menu[]>) => {
-      state.menu = action.payload
-    },
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload
-    },
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload
-    }
+  reducers: {},
+  extraReducers: builder => {
+    builder
+      .addCase(fetchMenu.pending, state => {
+        state.loading = true
+        state.error = null // Reset error saat mulai request
+      })
+      .addCase(fetchMenu.fulfilled, (state, action) => {
+        state.loading = false
+        state.data = action.payload.data
+      })
+      .addCase(fetchMenu.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
   }
 })
 
-export const { setmenu, setLoading, setError } = menuSlice.actions
 export default menuSlice.reducer
