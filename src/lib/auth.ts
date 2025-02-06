@@ -50,8 +50,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               username: result.data.username,
               nama: result.data.nama,
               role: result.data.role,
-              accessToken: result.data.token,
-              refreshToken: result.data['refresh-token']
+              accessToken: result.data.accessToken,
+              refreshToken: result.data.refreshToken
             }
           } else {
             console.error('Authentication failed:', result.message)

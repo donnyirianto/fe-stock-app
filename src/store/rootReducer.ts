@@ -1,10 +1,10 @@
 import { combineReducers } from '@reduxjs/toolkit'
 
-import menuReducer from './base/menuSlice'
+import authReducer from './auth/authSlice'
 import { resetState } from './resetSlice'
 
 const appReducer = combineReducers({
-  menu: menuReducer
+  auth: authReducer
 })
 
 const rootReducer = (state: any, action: any) => {

@@ -22,7 +22,7 @@ import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
-import { useSession } from 'next-auth/react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
@@ -45,8 +45,6 @@ const BadgeContentSpan = styled('span')({
 })
 
 const UserDropdown = () => {
-  const { data: session } = useSession()
-
   // States
   const [open, setOpen] = useState(false)
   const [openDialog, setOpenDialog] = useState(false)
@@ -85,14 +83,13 @@ const UserDropdown = () => {
       setOpen(false) // Close dialog first
 
       // Redirect to login page
-      const res = await fetch(`/api/auth/signout`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signout`, {
         method: 'POST'
       })
 
       if (res.ok) {
         // Redirect ke halaman login setelah logout berhasil
         dispatch(resetState())
-        console.log('reset state')
         router.push('/login')
       } else {
         console.error('Failed to sign out:', await res.json())
@@ -144,9 +141,9 @@ const UserDropdown = () => {
                     <Avatar alt='John Doe' src='/images/avatars/1.png' />
                     <div className='flex items-start flex-col'>
                       <Typography variant='body2' className='font-medium' color='text.primary'>
-                        {session?.user?.nama}
+                        admin
                       </Typography>
-                      <Typography variant='caption'>{session?.user?.username}</Typography>
+                      <Typography variant='caption'>000000</Typography>
                     </div>
                   </div>
                   <Divider className='mlb-1' />

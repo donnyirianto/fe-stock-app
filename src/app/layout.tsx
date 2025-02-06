@@ -1,4 +1,4 @@
-import { ReduxProvider } from '@/store/Provider'
+import { ReduxProvider } from '@/components/Provider'
 
 // Third-party Imports
 import 'react-perfect-scrollbar/dist/css/styles.css'

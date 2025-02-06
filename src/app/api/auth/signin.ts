@@ -6,7 +6,9 @@ import { signIn } from '@/lib/auth'
 
 export async function handleCredentialsSignin({ username, password }: { username: string; password: string }) {
   try {
-    const usersData = await signIn('credentials', { username, password, redirectTo: '/home' })
+    const usersData = await signIn('credentials', { username, password, redirect: false })
+
+    console.log(usersData)
 
     return usersData
   } catch (error) {

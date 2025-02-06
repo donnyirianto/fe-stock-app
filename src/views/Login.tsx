@@ -88,14 +88,15 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
     try {
       setIsLoading(true)
+
       const result = await handleCredentialsSignin(values)
 
       if (result?.message) {
         setGlobalError(result.message)
         setOpenDialog(true)
       }
-    } catch (error) {
-      setGlobalError('Server Sedang Sibuk, Silahkan coba beberapa saat lagi!')
+    } catch (error: any) {
+      setGlobalError(error.message)
       setOpenDialog(true)
     } finally {
       setIsLoading(false) // Matikan loading setelah request selesai
@@ -174,7 +175,7 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
       <Dialog open={openDialog} onClose={handleDialogClose}>
         <DialogTitle style={{ display: 'flex', alignItems: 'center', padding: '16px 24px' }}>
           <WarningAmberIcon fontSize='large' color='error' style={{ marginRight: 16 }} />
-          <Typography variant='h5' color='error' style={{ fontWeight: 600 }}>
+          <Typography color='error' style={{ fontWeight: 600 }}>
             Login Gagal
           </Typography>
         </DialogTitle>

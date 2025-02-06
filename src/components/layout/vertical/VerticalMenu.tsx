@@ -1,15 +1,13 @@
-// MUI Imports
-import { useEffect } from 'react'
+'use client'
 
-import { useDispatch, useSelector } from 'react-redux'
+// MUI Imports
+
+import { useQuery } from '@tanstack/react-query'
 
 import { useTheme } from '@mui/material/styles'
 
 // Third-party Imports
 import PerfectScrollbar from 'react-perfect-scrollbar'
-
-import { fetchMenu } from '@/store/base/menuSlice'
-import type { RootState, AppDispatch } from '@/store/store'
 
 // Type Imports
 import { GenerateVerticalMenu } from '@components/GenerateMenu'
@@ -46,6 +44,12 @@ const RenderExpandIcon = ({ open, transitionDuration }: RenderExpandIconProps) =
   </StyledVerticalNavExpandIcon>
 )
 
+const fetchMenus = async () => {
+  const res = await fetch('/api/base/menu')
+
+  return res.json()
+}
+
 const VerticalMenu = ({ scrollMenu }: Props) => {
   // Hooks
   const theme = useTheme()
@@ -57,14 +61,10 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
 
   const ScrollWrapper = isBreakpointReached ? 'div' : PerfectScrollbar
 
-  const dispatch = useDispatch<AppDispatch>()
-  const { data: menu, loading, error } = useSelector((state: RootState) => state.menu)
-
-  useEffect(() => {
-    if (!menu || menu.length === 0) {
-      dispatch(fetchMenu())
-    }
-  }, [dispatch, menu])
+  const { data, error, isLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: fetchMenus
+  })
 
   return (
     // eslint-disable-next-line lines-around-comment
