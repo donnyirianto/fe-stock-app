@@ -19,36 +19,35 @@ import {
 } from '@mui/material'
 
 // Types
-import type { MenuDataType } from '@/types/settings/menuTypes'
+import type { UsersDataType } from '@/types/settings/usersTypes'
 
-interface EditMenuDrawerProps {
+interface EditUsersDrawerProps {
   open: boolean
   onClose: () => void
-  menuId: string | null
-  menuList?: MenuDataType[]
+  usersId: string | null
 }
 
-export default function EditMenuDrawer({ open, onClose, menuId, menuList = [] }: EditMenuDrawerProps) {
+export default function EditUsersDrawer({ open, onClose, usersId }: EditUsersDrawerProps) {
   const { data: session } = useSession()
   const queryClient = useQueryClient()
 
-  const { register, handleSubmit, control, reset } = useForm<MenuDataType>({
+  const { register, handleSubmit, control, reset } = useForm<UsersDataType>({
     defaultValues: {
       nama: '',
-      link: '',
-      urut: '0',
-      id_main: '',
-      active: 'Y'
+      username: '',
+      password: '',
+      id_role: '',
+      aktif: 'Y'
     }
   })
 
-  // Query untuk mendapatkan detail menu berdasarkan menuId
-  const { data: menuData, isLoading } = useQuery({
-    queryKey: ['getSettingsMenuEdit', menuId],
+  // Query untuk mendapatkan detail users berdasarkan usersId
+  const { data: usersData, isLoading } = useQuery({
+    queryKey: ['getSettingsUsersEdit', usersId],
     queryFn: async () => {
-      if (!menuId) return null
+      if (!usersId) return null
 
-      const res = await fetch(`/api/settings/menu/${menuId}`, {
+      const res = await fetch(`/api/settings/users/${usersId}`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session?.accessToken ?? ''}`,
@@ -56,33 +55,33 @@ export default function EditMenuDrawer({ open, onClose, menuId, menuList = [] }:
         }
       })
 
-      if (!res.ok) throw new Error('Failed to fetch menu data')
+      if (!res.ok) throw new Error('Failed to fetch users data')
       const json = await res.json()
 
-      return json.data.data.menu
+      return json.data.data.users
     },
-    enabled: !!menuId && open
+    enabled: !!usersId && open
   })
 
   // Set data saat query selesai
   useEffect(() => {
-    if (menuData) {
+    if (usersData) {
       reset({
-        nama: menuData.nama || '',
-        link: menuData.link || '',
-        urut: menuData.urut?.toString() || '0',
-        id_main: menuData.id_main?.toString() || '',
-        active: menuData.active || 'Y'
+        nama: usersData.nama || '',
+        username: usersData.username || '',
+        password: usersData.password || '',
+        id_role: usersData.id_role?.toString() || '',
+        aktif: usersData.aktif || 'Y'
       })
     }
-  }, [menuData, reset])
+  }, [usersData, reset])
 
-  // Mutation untuk update menu
-  const updateMenuMutation = useMutation({
-    mutationFn: async (data: MenuDataType) => {
-      if (!menuId) throw new Error('Menu ID is missing')
+  // Mutation untuk update users
+  const updateUsersMutation = useMutation({
+    mutationFn: async (data: UsersDataType) => {
+      if (!usersId) throw new Error('Users ID is missing')
 
-      const response = await fetch(`/api/settings/menu/${menuId}`, {
+      const response = await fetch(`/api/settings/users/${usersId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -93,50 +92,46 @@ export default function EditMenuDrawer({ open, onClose, menuId, menuList = [] }:
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update menu')
+        throw new Error('Failed to update users')
       }
 
       return response.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['getSettingsMenu'] })
+      queryClient.invalidateQueries({ queryKey: ['getSettingsUsers'] })
       onClose()
       reset()
     }
   })
 
-  const onSubmit = (data: MenuDataType) => {
+  const onSubmit = (data: UsersDataType) => {
     console.log('Data yang dikirim:', data) // Debugging
-    updateMenuMutation.mutate(data)
+    updateUsersMutation.mutate(data)
   }
 
   return (
     <Drawer anchor='right' open={open} onClose={onClose}>
       <form onSubmit={handleSubmit(onSubmit)} className='p-4 w-96'>
-        <DialogTitle>Edit Menu</DialogTitle>
+        <DialogTitle>Edit Users</DialogTitle>
         <DialogContent>
           {isLoading ? (
             <p>Loading...</p>
           ) : (
             <>
               <TextField label='Nama' fullWidth margin='normal' {...register('nama', { required: true })} />
-              <TextField label='Link' fullWidth margin='normal' {...register('link')} />
-              <TextField label='Urut' fullWidth margin='normal' type='number' {...register('urut')} />
-
-              {/* Select ID Main Menu */}
+              <TextField label='Username' fullWidth margin='normal' {...register('username', { required: true })} />
+              <TextField label='Password' type='password' fullWidth margin='normal' {...register('password')} />
+              {/* Select Status Active */}
               <FormControl fullWidth margin='normal'>
-                <InputLabel>ID Main Menu</InputLabel>
+                <InputLabel>Role</InputLabel>
                 <Controller
-                  name='id_main'
+                  name='id_role'
                   control={control}
                   render={({ field }) => (
-                    <Select {...field} defaultValue=''>
-                      <MenuItem value=''>None</MenuItem>
-                      {menuList?.map(menu => (
-                        <MenuItem key={menu.id} value={menu.id?.toString()}>
-                          {menu.nama}
-                        </MenuItem>
-                      ))}
+                    <Select {...field}>
+                      <MenuItem value='1'>Owner</MenuItem>
+                      <MenuItem value='2'>Admin</MenuItem>
+                      <MenuItem value='3'>Sales</MenuItem>
                     </Select>
                   )}
                 />
@@ -146,7 +141,7 @@ export default function EditMenuDrawer({ open, onClose, menuId, menuList = [] }:
               <FormControl fullWidth margin='normal'>
                 <InputLabel>Status</InputLabel>
                 <Controller
-                  name='active'
+                  name='aktif'
                   control={control}
                   render={({ field }) => (
                     <Select {...field}>
@@ -163,8 +158,8 @@ export default function EditMenuDrawer({ open, onClose, menuId, menuList = [] }:
           <Button onClick={onClose} color='secondary'>
             Cancel
           </Button>
-          <Button type='submit' variant='contained' color='primary' disabled={updateMenuMutation.isPending}>
-            {updateMenuMutation.isPending ? 'Updating...' : 'Save'}
+          <Button type='submit' variant='contained' color='primary' disabled={updateUsersMutation.isPending}>
+            {updateUsersMutation.isPending ? 'Updating...' : 'Save'}
           </Button>
         </DialogActions>
       </form>
