@@ -1,6 +1,8 @@
 // React Imports
 import { useState } from 'react'
 
+import { useSession } from 'next-auth/react'
+
 // MUI Imports
 import Button from '@mui/material/Button'
 import Drawer from '@mui/material/Drawer'
@@ -18,6 +20,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material
 
 // Third-party Imports
 import { useForm, Controller } from 'react-hook-form'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 // Types Imports
 import type { MenuDataType } from '@/types/settings/menuTypes'
@@ -26,7 +29,6 @@ type Props = {
   open: boolean
   handleClose: () => void
   menuData?: MenuDataType[]
-  setData: (data: MenuDataType[]) => void
 }
 
 type FormValidateType = {
@@ -46,13 +48,15 @@ const initialData = {
 }
 
 const AddMenuDrawer = (props: Props) => {
-  // Props
-  const { open, handleClose, menuData, setData } = props
+  const session = useSession()
 
-  // States
+  const { open, handleClose, menuData } = props
+
   const [formData, setFormData] = useState<FormNonValidateType>(initialData)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Hooks
+  const queryClient = useQueryClient()
+
   const {
     control,
     reset: resetForm,
@@ -67,22 +71,14 @@ const AddMenuDrawer = (props: Props) => {
     }
   })
 
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  const onSubmit = async (data: FormValidateType) => {
-    try {
-      const newMenu: MenuDataType = {
-        nama: data.nama,
-        link: data.link,
-        urut: data.urut,
-        active: data.active,
-        id_main: formData.id_main
-      }
-
+  const addMenuMutation = useMutation({
+    mutationFn: async (newMenu: MenuDataType) => {
       const response = await fetch('/api/settings/menu', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.data?.accessToken ?? ''}`,
+          'x-refresh-token': session?.data?.refreshToken ?? ''
         },
         body: JSON.stringify(newMenu)
       })
@@ -91,19 +87,21 @@ const AddMenuDrawer = (props: Props) => {
         throw new Error(`Failed to save menu: ${response.statusText}`)
       }
 
-      await response.json() // Opsional: bisa digunakan jika ingin menampilkan hasil API
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate query agar data menu di-refresh setelah sukses tambah
+      queryClient.invalidateQueries({ queryKey: ['getSettingsMenu'] })
 
-      // Update state hanya jika berhasil
-      setData([...(menuData ?? []), newMenu])
-
-      // Reset form
+      // Reset form dan tutup drawer
       handleClose()
       setFormData(initialData)
       resetForm({ nama: '', link: '', urut: '', active: '' })
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       setErrorMessage(error.message)
     }
-  }
+  })
 
   const handleReset = () => {
     handleClose()
@@ -127,7 +125,10 @@ const AddMenuDrawer = (props: Props) => {
       </div>
       <Divider />
       <div className='p-5'>
-        <form onSubmit={handleSubmit(data => onSubmit(data))} className='flex flex-col gap-5'>
+        <form
+          onSubmit={handleSubmit(data => addMenuMutation.mutate({ ...data, id_main: formData.id_main }))}
+          className='flex flex-col gap-5'
+        >
           <Controller
             name='nama'
             control={control}
@@ -164,9 +165,9 @@ const AddMenuDrawer = (props: Props) => {
               <TextField
                 {...field}
                 fullWidth
-                type='urut'
+                type='number'
                 label='Urutan Menu'
-                placeholder=''
+                placeholder='Urutan'
                 {...(errors.urut && { error: true, helperText: 'This field is required.' })}
               />
             )}
@@ -209,15 +210,16 @@ const AddMenuDrawer = (props: Props) => {
           </FormControl>
 
           <div className='flex items-center gap-4'>
-            <Button variant='contained' type='submit'>
-              Submit
+            <Button variant='contained' type='submit' disabled={addMenuMutation.isPending}>
+              {addMenuMutation.isPending ? 'Proses...' : 'Submit'}
             </Button>
-            <Button variant='outlined' color='error' type='reset' onClick={() => handleReset()}>
+            <Button variant='outlined' color='error' type='reset' onClick={handleReset}>
               Cancel
             </Button>
           </div>
         </form>
       </div>
+
       {/* Dialog Error */}
       <Dialog open={Boolean(errorMessage)} onClose={() => setErrorMessage(null)}>
         <DialogTitle>Error</DialogTitle>

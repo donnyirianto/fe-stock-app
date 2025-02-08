@@ -10,6 +10,8 @@ import { useTheme } from '@mui/material/styles'
 import PerfectScrollbar from 'react-perfect-scrollbar'
 
 // Type Imports
+import { useSession, signOut } from 'next-auth/react'
+
 import { GenerateVerticalMenu } from '@components/GenerateMenu'
 
 import type { VerticalMenuContextProps } from '@menu/components/vertical-menu/Menu'
@@ -44,14 +46,35 @@ const RenderExpandIcon = ({ open, transitionDuration }: RenderExpandIconProps) =
   </StyledVerticalNavExpandIcon>
 )
 
-const fetchMenus = async () => {
-  const res = await fetch('/api/base/menu')
+// Hooks
 
-  return res.json()
+const getMenus = async (tokenAccess: string, tokenRefresh: string) => {
+  if (!tokenAccess || !tokenRefresh) {
+    await signOut({ redirect: true })
+  }
+
+  const res = await fetch('/api/base/menu', {
+    headers: {
+      Authorization: `Bearer ${tokenAccess}`,
+      'x-refresh-token': tokenRefresh
+    }
+  })
+
+  const { data, newToken, error } = await res.json()
+
+  console.log(newToken)
+
+  if (!res.ok) {
+    throw new Error(error || 'Gagal mengambil Menu')
+  }
+
+  return data
 }
 
 const VerticalMenu = ({ scrollMenu }: Props) => {
   // Hooks
+  const session = useSession()
+
   const theme = useTheme()
   const verticalNavOptions = useVerticalNav()
   const { isBreakpointReached } = useVerticalNav()
@@ -61,9 +84,17 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
 
   const ScrollWrapper = isBreakpointReached ? 'div' : PerfectScrollbar
 
-  const { data, error, isLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: fetchMenus
+  const { isPending, isError, error, data } = useQuery({
+    queryKey: ['getMenus'],
+    queryFn: () => getMenus(session?.data?.accessToken ?? '', session?.data?.refreshToken ?? ''),
+    select: data => data,
+    staleTime: 1000 * 60 * 5,
+    refetchOnMount: false, // Mencegah refetch saat komponen dipasang kembali
+    retry: false, // Pastikan tidak ada retry
+    retryOnMount: false, // Mencegah retry otomatis saat komponen pertama kali dipasang
+    enabled: !!session?.data?.accessToken
+
+    //enabled: !!tokenAccess // Pastikan query hanya berjalan jika token tersedia
   })
 
   return (
@@ -87,12 +118,12 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
         renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
-        {loading ? (
+        {isPending ? (
           <div className='p-4'>Loading...</div>
-        ) : error ? (
-          <div>Error: {error}</div>
+        ) : isError ? (
+          <div>Error: {error?.message}</div>
         ) : (
-          <GenerateVerticalMenu menuData={menu} />
+          <GenerateVerticalMenu menuData={data.data.menu} />
         )}
       </Menu>
     </ScrollWrapper>

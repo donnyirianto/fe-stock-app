@@ -1,7 +1,12 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
+import { useSession } from 'next-auth/react'
+
 // React Imports
-import { useEffect, useState, useMemo } from 'react'
+
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 // Next Imports
 // import Link from 'next/link'
@@ -15,7 +20,9 @@ import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
-import Checkbox from '@mui/material/Checkbox'
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material'
+
+//import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
 
 //import { styled } from '@mui/material/styles'
@@ -37,7 +44,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
-import type { ColumnDef, FilterFn } from '@tanstack/react-table'
+import type { FilterFn } from '@tanstack/react-table'
 import type { RankingInfo } from '@tanstack/match-sorter-utils'
 
 // Type Imports
@@ -118,85 +125,86 @@ const DebouncedInput = ({
 }
 
 const MenuListTable = ({ tableData }: { tableData?: MenuDataType[] }) => {
+  const session = useSession()
+
   // States
+  const [open, setOpen] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
-  const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState(...[tableData])
-  const [addMenuOpen, setAddMenuOpen] = useState(false)
-  const [globalFilter, setGlobalFilter] = useState('')
-
-  const columns = useMemo<ColumnDef<MenuDataTypeWithAction, any>[]>(
-    () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            {...{
-              checked: table.getIsAllRowsSelected(),
-              indeterminate: table.getIsSomeRowsSelected(),
-              onChange: table.getToggleAllRowsSelectedHandler()
-            }}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            {...{
-              checked: row.getIsSelected(),
-              disabled: !row.getCanSelect(),
-              indeterminate: row.getIsSomeSelected(),
-              onChange: row.getToggleSelectedHandler()
-            }}
-          />
-        )
-      },
-      columnHelper.accessor('nama', {
-        header: 'Nama',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-3'>
-            <div className='flex flex-col'>
-              <Typography color='text.primary' className='font-medium'>
-                {row.original.nama}
-              </Typography>
-            </div>
-          </div>
-        )
-      }),
-      columnHelper.accessor('link', {
-        header: 'Link',
-        cell: ({ row }) => <Typography>{row.original.link}</Typography>
-      }),
-      columnHelper.accessor('active', {
-        header: 'Status',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-3'>
-            <Chip
-              variant='tonal'
-              label={row.original.active == 'Y' ? 'enabled' : 'disabled'}
-              size='small'
-              color={menuStatusObj[row.original.active as 'Y' | 'N']}
-              className='capitalize'
-            />
-          </div>
-        )
-      }),
-      columnHelper.accessor('action', {
-        header: 'Action',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-0.5'>
-            <IconButton size='small' onClick={() => setData(data?.filter(r => r.id !== row.original.id))}>
-              <i className='ri-delete-bin-7-line text-textSecondary' />
-            </IconButton>
-            <IconButton size='small'>
-              <i className='ri-edit-box-line text-textSecondary' />
-            </IconButton>
-          </div>
-        ),
-        enableSorting: false
+  // Mutasi untuk menghapus menu
+  const deleteMenuMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/settings/menu/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.data?.accessToken ?? ''}`,
+          'x-refresh-token': session?.data?.refreshToken ?? ''
+        }
       })
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data]
-  )
+
+      if (!response.ok) {
+        throw new Error('Failed to delete menu item')
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['getSettingsMenu'] }) // Refresh data setelah delete
+      handleCloseDialog()
+    },
+    onError: error => {
+      console.error('Error deleting menu:', error)
+    }
+  })
+
+  const handleOpenDialog = (id: string) => {
+    setSelectedId(id)
+    setOpen(true)
+  }
+
+  const handleCloseDialog = () => {
+    setOpen(false)
+    setSelectedId(null)
+  }
+
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
+
+  const columns = [
+    columnHelper.accessor('nama', {
+      header: 'Nama',
+      cell: ({ row }) => <Typography className='font-medium'>{row.original.nama}</Typography>
+    }),
+    columnHelper.accessor('link', {
+      header: 'Link',
+      cell: ({ row }) => <Typography>{row.original.link}</Typography>
+    }),
+    columnHelper.accessor('active', {
+      header: 'Status',
+      cell: ({ row }) => (
+        <Chip
+          variant='tonal'
+          label={row.original.active === 'Y' ? 'Enabled' : 'Disabled'}
+          size='small'
+          color={menuStatusObj[row.original.active as 'Y' | 'N']}
+        />
+      )
+    }),
+    columnHelper.display({
+      id: 'action',
+      header: 'Action',
+      cell: ({ row }) => (
+        <div className='flex gap-1'>
+          <IconButton size='small' onClick={() => row.original.id && handleOpenDialog(row.original.id)}>
+            <i className='ri-delete-bin-7-line' />
+          </IconButton>
+          <IconButton size='small'>
+            <i className='ri-edit-box-line' />
+          </IconButton>
+        </div>
+      )
+    })
+  ]
 
   const table = useReactTable({
     data: tableData as MenuDataType[],
@@ -205,7 +213,6 @@ const MenuListTable = ({ tableData }: { tableData?: MenuDataType[] }) => {
       fuzzy: fuzzyFilter
     },
     state: {
-      rowSelection,
       globalFilter
     },
     initialState: {
@@ -213,10 +220,8 @@ const MenuListTable = ({ tableData }: { tableData?: MenuDataType[] }) => {
         pageSize: 10
       }
     },
-    enableRowSelection: true, //enable row selection for all rows
-    // enableRowSelection: row => row.original.age > 18, // or enable row selection conditionally per row
+    enableRowSelection: true,
     globalFilterFn: fuzzyFilter,
-    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
@@ -316,12 +321,26 @@ const MenuListTable = ({ tableData }: { tableData?: MenuDataType[] }) => {
           onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
         />
       </Card>
-      <AddMenuDrawer
-        open={addMenuOpen}
-        handleClose={() => setAddMenuOpen(!addMenuOpen)}
-        menuData={tableData}
-        setData={setData}
-      />
+      <AddMenuDrawer open={addMenuOpen} handleClose={() => setAddMenuOpen(!addMenuOpen)} menuData={tableData} />
+      {/* Dialog Konfirmasi */}
+      <Dialog open={open} onClose={handleCloseDialog}>
+        <DialogTitle>Konfirmasi Hapus</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Apakah Anda yakin ingin menghapus menu ini?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color='primary'>
+            Batal
+          </Button>
+          <Button
+            onClick={() => selectedId && deleteMenuMutation.mutate(selectedId)}
+            color='error'
+            disabled={deleteMenuMutation.isPending} // Disable saat loading
+          >
+            {deleteMenuMutation.isPending ? 'Menghapus...' : 'Hapus'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }

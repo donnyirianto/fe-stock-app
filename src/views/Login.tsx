@@ -1,7 +1,11 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+import { useRouter } from 'next/navigation'
+
+import { useDispatch } from 'react-redux'
 
 // MUI Imports
 import Typography from '@mui/material/Typography'
@@ -26,6 +30,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import type { z } from 'zod'
+
+import { useSession } from 'next-auth/react'
+
+import { login } from '@/store/auth/authSlice'
 
 import type { Mode } from '@core/types'
 
@@ -85,15 +93,36 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
     setOpenDialog(false)
   }
 
+  const { data: session, status } = useSession()
+
+  const dispatch = useDispatch()
+
+  const router = useRouter()
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      dispatch(login({ user: session?.user, tokenAccess: session?.accessToken, tokenRefresh: session?.refreshToken }))
+      router.push('/')
+    }
+  }, [session, status, router, dispatch])
+
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
     try {
       setIsLoading(true)
 
-      const result = await handleCredentialsSignin(values)
+      const res = await handleCredentialsSignin(values)
 
-      if (result?.message) {
-        setGlobalError(result.message)
+      if (res?.message) {
+        setGlobalError(res.message)
         setOpenDialog(true)
+      } else {
+        const session = await fetch('/api/auth/session').then(res => res.json())
+
+        if (session?.user) {
+          dispatch(login({ user: session.user, tokenAccess: session.accessToken, tokenRefresh: session.refreshToken }))
+        }
+
+        router.push('/')
       }
     } catch (error: any) {
       setGlobalError(error.message)
@@ -129,11 +158,7 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
         <div className='flex flex-col gap-5 is-full sm:is-auto md:is-full sm:max-is-[400px] md:max-is-[unset] mbs-11 sm:mbs-14 md:mbs-0'>
           <div>
             <Typography variant='h4'>{`Welcome to ${themeConfig.templateName}! 👋🏻`}</Typography>
-            {globalError && (
-              <Typography color='error' variant='body2' align='center'>
-                <ErrorMessage error={globalError} />
-              </Typography>
-            )}
+            {globalError && <ErrorMessage error={globalError} />}
           </div>
           <form noValidate autoComplete='off' onSubmit={form.handleSubmit(onSubmit)} className='flex flex-col gap-5'>
             <TextField

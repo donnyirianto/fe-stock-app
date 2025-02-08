@@ -27,7 +27,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           // get user
           const { username, password } = parsedCredentials.data
 
-          const res = await fetch(`${process.env.API_BASE_URL}/auth/login`, {
+          const res = await fetch(`${process.env.BACKEND_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -53,11 +53,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               accessToken: result.data.accessToken,
               refreshToken: result.data.refreshToken
             }
-          } else {
-            console.error('Authentication failed:', result.message)
-
-            return null
           }
+
+          console.error('Authentication failed:', result.message)
+
+          return null
         } catch (error) {
           if (error instanceof ZodError) {
             // Return `null` to indicate that the credentials are invalid
@@ -109,7 +109,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       if (Date.now() > token.exp * 1000) {
         try {
-          const res = await fetch(`${process.env.API_BASE_URL}/auth/refresh-token`, {
+          const res = await fetch(`${process.env.BACKEND_URL}/auth/refresh-token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken: token.refreshToken })

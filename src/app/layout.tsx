@@ -1,3 +1,5 @@
+import { SessionProvider } from 'next-auth/react'
+
 import { ReduxProvider } from '@/components/Provider'
 
 // Third-party Imports
@@ -23,7 +25,9 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html id='__next' lang='en' dir={direction}>
       <body className='flex is-full min-bs-full flex-auto flex-col'>
-        <ReduxProvider>{children}</ReduxProvider>
+        <SessionProvider>
+          <ReduxProvider>{children}</ReduxProvider>
+        </SessionProvider>
       </body>
     </html>
   )

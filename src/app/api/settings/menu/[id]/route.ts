@@ -3,7 +3,13 @@ import { NextResponse } from 'next/server'
 
 import { fetchFromBackend } from '@/lib/fetchFromBackend'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params
+
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
+
   try {
     const tokenAccess = req.headers.get('Authorization')?.replace('Bearer ', '')
     const tokenRefresh = req.headers.get('x-refresh-token')
@@ -12,21 +18,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Session expired' }, { status: 401 })
     }
 
-    // Ambil data dan cek apakah ada token baru
     const { data, newTokens } = await fetchFromBackend(
-      '/settings/menu',
+      `/settings/menu/${id}`,
       { headers: { Authorization: `Bearer ${tokenAccess}` } },
       tokenRefresh
     )
 
-    // Response ke client (data API + token baru jika ada)
     return NextResponse.json({ data, newTokens }, { status: 200 })
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params
+
+  if (!id) {
+    return NextResponse.json({ error: 'Pilih salah satu menu!' }, { status: 400 })
+  }
+
   try {
     const tokenAccess = req.headers.get('Authorization')?.replace('Bearer ', '')
     const tokenRefresh = req.headers.get('x-refresh-token')
@@ -35,19 +45,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Session expired' }, { status: 401 })
     }
 
-    // Ambil data dari request body
-    const body = await req.json()
-
-    // Kirim ke backend untuk menambahkan menu baru
     const { data, newTokens } = await fetchFromBackend(
-      '/settings/menu',
+      `/settings/menu/${id}`,
       {
-        method: 'POST',
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${tokenAccess}`
-        },
-        data: JSON.stringify(body)
+        }
       },
       tokenRefresh
     )
