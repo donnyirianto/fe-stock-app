@@ -53,6 +53,7 @@ import type { MenuDataType } from '@/types/settings/menuTypes'
 
 // Component Imports
 import AddMenuDrawer from './AddMenuDrawer'
+import EditMenuDrawer from './EditMenuDrawer'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -167,6 +168,14 @@ const MenuListTable = ({ tableData }: { tableData?: MenuDataType[] }) => {
     setSelectedId(null)
   }
 
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false)
+  const [selectedMenu, setSelectedMenu] = useState<string | null>(null)
+
+  const handleEdit = (id: string) => {
+    setSelectedMenu(id)
+    setEditDrawerOpen(true)
+  }
+
   const [globalFilter, setGlobalFilter] = useState('')
   const [addMenuOpen, setAddMenuOpen] = useState(false)
 
@@ -198,7 +207,7 @@ const MenuListTable = ({ tableData }: { tableData?: MenuDataType[] }) => {
           <IconButton size='small' onClick={() => row.original.id && handleOpenDialog(row.original.id)}>
             <i className='ri-delete-bin-7-line' />
           </IconButton>
-          <IconButton size='small'>
+          <IconButton size='small' onClick={() => row.original.id && handleEdit(row.original.id)}>
             <i className='ri-edit-box-line' />
           </IconButton>
         </div>
@@ -322,6 +331,12 @@ const MenuListTable = ({ tableData }: { tableData?: MenuDataType[] }) => {
         />
       </Card>
       <AddMenuDrawer open={addMenuOpen} handleClose={() => setAddMenuOpen(!addMenuOpen)} menuData={tableData} />
+      <EditMenuDrawer
+        open={editDrawerOpen}
+        onClose={() => setEditDrawerOpen(false)}
+        menuId={selectedMenu}
+        menuList={tableData}
+      />
       {/* Dialog Konfirmasi */}
       <Dialog open={open} onClose={handleCloseDialog}>
         <DialogTitle>Konfirmasi Hapus</DialogTitle>
