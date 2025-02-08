@@ -1,6 +1,7 @@
 // MUI Imports
 import Grid from '@mui/material/Grid'
-import Typography from '@mui/material/Typography'
+
+//import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 
@@ -39,17 +40,8 @@ const MasterList = ({
         </Grid>
       )}
 
-      {/* Jika data kosong */}
-      {!pending && !isError && masterData?.length === 0 && (
-        <Grid item xs={12}>
-          <Typography variant='h6' align='center'>
-            Tidak ada master yang tersedia.
-          </Typography>
-        </Grid>
-      )}
-
       {/* Jika data tersedia */}
-      {!pending && !isError && masterData && masterData.length > 0 && (
+      {!pending && !isError && masterData && (
         <Grid item xs={12}>
           <MasterListTable tableData={masterData} />
         </Grid>

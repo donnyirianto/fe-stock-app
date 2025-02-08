@@ -105,7 +105,6 @@ export default function EditUsersDrawer({ open, onClose, usersId }: EditUsersDra
   })
 
   const onSubmit = (data: UsersDataType) => {
-    console.log('Data yang dikirim:', data) // Debugging
     updateUsersMutation.mutate(data)
   }
 

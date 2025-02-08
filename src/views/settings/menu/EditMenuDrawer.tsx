@@ -106,7 +106,6 @@ export default function EditMenuDrawer({ open, onClose, menuId, menuList = [] }:
   })
 
   const onSubmit = (data: MenuDataType) => {
-    console.log('Data yang dikirim:', data) // Debugging
     updateMenuMutation.mutate(data)
   }
 

@@ -9,12 +9,12 @@ import MasterList from '@views/produk/master'
 
 // Hooks
 
-const getSettingsMaster = async (tokenAccess: string, tokenRefresh: string) => {
+const getProdukMaster = async (tokenAccess: string, tokenRefresh: string) => {
   if (!tokenAccess || !tokenRefresh) {
     await signOut({ redirect: true })
   }
 
-  const res = await fetch('/api/settings/master', {
+  const res = await fetch('/api/produk/master', {
     headers: {
       Authorization: `Bearer ${tokenAccess}`,
       'x-refresh-token': tokenRefresh
@@ -37,9 +37,9 @@ const MasterListPage = () => {
 
   //
   const { isPending, isError, error, data } = useQuery({
-    queryKey: ['getSettingsMaster'],
-    queryFn: () => getSettingsMaster(session?.data?.accessToken ?? '', session?.data?.refreshToken ?? ''),
-    select: data => data.data.master,
+    queryKey: ['getProdukMaster'],
+    queryFn: () => getProdukMaster(session?.data?.accessToken ?? '', session?.data?.refreshToken ?? ''),
+    select: data => data.data.produk,
     staleTime: 1000 * 60 * 5,
     refetchOnMount: false,
     retry: false,

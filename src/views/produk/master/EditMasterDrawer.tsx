@@ -47,7 +47,7 @@ export default function EditMasterDrawer({ open, onClose, masterId }: EditMaster
       if (!res.ok) throw new Error('Failed to fetch master data')
       const json = await res.json()
 
-      return json.data.data.master
+      return json.data.data.produk
     },
     enabled: !!masterId && open
   })
@@ -94,7 +94,6 @@ export default function EditMasterDrawer({ open, onClose, masterId }: EditMaster
   })
 
   const onSubmit = (data: MasterDataType) => {
-    console.log('Data yang dikirim:', data) // Debugging
     updateMasterMutation.mutate(data)
   }
 
