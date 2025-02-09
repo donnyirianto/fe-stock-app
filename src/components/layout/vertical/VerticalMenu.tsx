@@ -88,13 +88,11 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
     queryKey: ['getMenus'],
     queryFn: () => getMenus(session?.data?.accessToken ?? '', session?.data?.refreshToken ?? ''),
     select: data => data,
-    staleTime: 1000 * 60 * 5,
-    refetchOnMount: false, // Mencegah refetch saat komponen dipasang kembali
-    retry: false, // Pastikan tidak ada retry
-    retryOnMount: false, // Mencegah retry otomatis saat komponen pertama kali dipasang
+    staleTime: 0,
+    refetchOnMount: true, // Mencegah refetch saat komponen dipasang kembali
+    retry: false,
+    retryOnMount: true,
     enabled: !!session?.data?.accessToken
-
-    //enabled: !!tokenAccess // Pastikan query hanya berjalan jika token tersedia
   })
 
   return (

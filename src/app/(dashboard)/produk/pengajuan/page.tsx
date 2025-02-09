@@ -40,7 +40,7 @@ const PengajuanListPage = () => {
     queryKey: ['getProdukPengajuan'],
     queryFn: () => getProdukPengajuan(session?.data?.accessToken ?? '', session?.data?.refreshToken ?? ''),
     select: data => data.data.pengajuan,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
     refetchOnMount: false,
     retry: false,
     retryOnMount: false,

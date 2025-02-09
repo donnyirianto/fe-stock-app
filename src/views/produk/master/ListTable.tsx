@@ -201,7 +201,7 @@ const MasterListTable = ({ tableData }: { tableData?: MasterDataType[] }) => {
             <i className='ri-delete-bin-7-line' />
           </IconButton>
           <IconButton size='small' onClick={() => row.original.id_produk && handleEdit(row.original.id_produk)}>
-            <i className='ri-edit-box-line' />
+            <i className='ri-edit-line' />
           </IconButton>
         </div>
       )

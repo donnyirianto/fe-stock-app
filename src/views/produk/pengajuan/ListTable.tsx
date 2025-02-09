@@ -19,6 +19,7 @@ import Divider from '@mui/material/Divider'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import Chip from '@mui/material/Chip'
 
 //import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material'
 
@@ -47,17 +48,25 @@ import {
 import type { FilterFn } from '@tanstack/react-table'
 import type { RankingInfo } from '@tanstack/match-sorter-utils'
 
+import { useSession } from 'next-auth/react'
+
 // Type Imports
 
 import type { PengajuanDataType } from '@/types/produk/pengajuanTypes'
 
 // Component Imports
 import AddPengajuanDrawer from './AddPengajuanDrawer'
-
-//import EditPengajuanDrawer from './EditPengajuanDrawer'
+import DetailPengajuanDrawer from './DetailPengajuanDrawer'
+import EditPengajuanDrawer from './EditPengajuanDrawer'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
+
+const statusColorMap = {
+  PENDING: 'warning', // Kuning
+  REJECTED: 'error', // Merah
+  APPROVED: 'success' // Hijau
+} as const
 
 declare module '@tanstack/table-core' {
   interface FilterFns {
@@ -118,34 +127,37 @@ const DebouncedInput = ({
 }
 
 const PengajuanListTable = ({ tableData }: { tableData?: PengajuanDataType[] }) => {
-  // States
-  // const [open, setOpen] = useState(false)
-  // const [selectedId, setSelectedId] = useState<string | null>(null)
+  //States
+  const { data: session } = useSession()
 
-  // Mutasi untuk menghapus pengajuan
+  const [addPengajuanOpen, setAddPengajuanOpen] = useState(false)
+  const [viewPengajuanDetail, setViewPengajuanDetail] = useState(false)
+  const [viewEditPengajuan, setViewEditPengajuan] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  // const handleOpenDialog = (id: string) => {
-  //   setSelectedId(id)
-  //   setOpen(true)
-  // }
+  const handleView = (id: string) => {
+    setSelectedId(id)
+    setViewPengajuanDetail(true)
+  }
 
-  // const handleCloseDialog = () => {
-  //   setOpen(false)
-  //   setSelectedId(null)
-  // }
-
-  // const handleEdit = (id: string) => {
-  //   setSelectedPengajuan(id)
-  //   setEditDrawerOpen(true)
-  // }
+  const handleEdit = (id: string) => {
+    setSelectedId(id)
+    setViewEditPengajuan(true)
+  }
 
   const [globalFilter, setGlobalFilter] = useState('')
-  const [addPengajuanOpen, setAddPengajuanOpen] = useState(false)
 
   const columns = [
     columnHelper.accessor('id', {
       header: 'ID',
-      cell: ({ row }) => <Typography>{row.original.id}</Typography>
+      cell: ({ row }) => (
+        <Typography
+          onClick={() => row.original.id && handleView(row.original.id)}
+          sx={{ fontWeight: 'bold', color: 'rgb(16 185 129)' }}
+        >
+          #{row.original.id}
+        </Typography>
+      )
     }),
     columnHelper.accessor('subject', {
       header: 'Subject',
@@ -160,6 +172,18 @@ const PengajuanListTable = ({ tableData }: { tableData?: PengajuanDataType[] }) 
       header: 'Diajukan Oleh',
       cell: ({ row }) => <Typography>{row.original.nama_user}</Typography>
     }),
+
+    columnHelper.accessor('status', {
+      header: 'Status',
+      cell: ({ row }) => (
+        <Chip
+          variant='tonal'
+          label={row.original.status}
+          size='small'
+          color={statusColorMap[row.original.status as keyof typeof statusColorMap]}
+        />
+      )
+    }),
     columnHelper.accessor('created_at', {
       header: 'Tanggal Buat',
       cell: ({ row }) => <Typography>{row.original.created_at}</Typography>
@@ -172,11 +196,26 @@ const PengajuanListTable = ({ tableData }: { tableData?: PengajuanDataType[] }) 
     columnHelper.display({
       id: 'action',
       header: 'Action',
-      cell: ({}) => (
+      cell: ({ row }) => (
         <div className='flex gap-1'>
-          <IconButton size='small'>
-            <i className='ri-edit-box-line' />
+          <IconButton
+            size='small'
+            onClick={() => row.original.id && handleView(row.original.id)}
+            sx={{ color: 'aqua' }}
+          >
+            <i className='ri-eye-line' />
           </IconButton>
+          {session?.user?.role === '1' && (
+            <>
+              <IconButton
+                size='small'
+                onClick={() => row.original.id && handleEdit(row.original.id)}
+                sx={{ color: 'orange' }}
+              >
+                <i className='ri-edit-line' />
+              </IconButton>
+            </>
+          )}
         </div>
       )
     })
@@ -211,7 +250,7 @@ const PengajuanListTable = ({ tableData }: { tableData?: PengajuanDataType[] }) 
   return (
     <>
       <Card>
-        <CardHeader title='Data Pengajuan' className='pbe-4' />
+        <CardHeader title='Data Penawaran' className='pbe-4' />
         <Divider />
         <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
           <div className='flex items-center gap-x-4 max-sm:gap-y-4 is-full flex-col sm:is-auto sm:flex-row'>
@@ -226,7 +265,7 @@ const PengajuanListTable = ({ tableData }: { tableData?: PengajuanDataType[] }) 
               onClick={() => setAddPengajuanOpen(!addPengajuanOpen)}
               className='is-full sm:is-auto'
             >
-              Buat Pengajuan Baru
+              Buat Penawaran Baru
             </Button>
           </div>
         </div>
@@ -302,13 +341,19 @@ const PengajuanListTable = ({ tableData }: { tableData?: PengajuanDataType[] }) 
         />
       </Card>
 
-      {<AddPengajuanDrawer open={addPengajuanOpen} onClose={() => setAddPengajuanOpen(!addPengajuanOpen)} />}
-      {/*<EditPengajuanDrawer
-        open={editDrawerOpen}
-        onClose={() => setEditDrawerOpen(false)}
-        pengajuanId={selectedPengajuan}
-      /> */}
-      {/* Dialog Konfirmasi */}
+      {<AddPengajuanDrawer open={addPengajuanOpen} onClose={() => setAddPengajuanOpen(!open)} />}
+      {
+        <DetailPengajuanDrawer
+          open={viewPengajuanDetail}
+          onClose={() => setViewPengajuanDetail(false)}
+          pengajuanId={selectedId}
+        />
+      }
+      <EditPengajuanDrawer
+        open={viewEditPengajuan}
+        onClose={() => setViewEditPengajuan(false)}
+        pengajuanId={selectedId}
+      />
     </>
   )
 }

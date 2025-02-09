@@ -1,7 +1,10 @@
+'use client'
+
+import { useEffect } from 'react'
+
 import { useSession, signOut } from 'next-auth/react'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-
 import {
   Dialog,
   DialogTitle,
@@ -18,12 +21,6 @@ import {
   InputLabel
 } from '@mui/material'
 
-type Produk = {
-  id_produk: string
-  nama: string
-  harga: string
-}
-
 type DetailItem = {
   id_produk: string
   harga: string
@@ -35,11 +32,13 @@ type FormData = {
   detail_item: DetailItem[]
 }
 
-interface PengajuanFormProps {
+interface EditPengajuanProps {
   open: boolean
   onClose: () => void
+  pengajuanId: string | null
 }
 
+// Fetch daftar produk dari API
 const getProdukMaster = async (tokenAccess: string, tokenRefresh: string) => {
   if (!tokenAccess || !tokenRefresh) {
     await signOut({ redirect: true })
@@ -63,14 +62,41 @@ const getProdukMaster = async (tokenAccess: string, tokenRefresh: string) => {
   return data.data.produk
 }
 
-const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
+// Fetch data pengajuan berdasarkan ID
+const fetchPengajuanById = async (id: string, tokenAccess: string, tokenRefresh: string) => {
+  if (!id) return null
+
+  if (!tokenAccess || !tokenRefresh) {
+    await signOut({ redirect: true })
+  }
+
+  const res = await fetch(`/api/produk/pengajuan/${id}`, {
+    headers: {
+      Authorization: `Bearer ${tokenAccess}`,
+      'x-refresh-token': tokenRefresh
+    }
+  })
+
+  const { data, newToken, error } = await res.json()
+
+  if (!res.ok) {
+    throw new Error(error || 'Gagal mengambil data pengajuan')
+  }
+
+  console.log(newToken)
+
+  return data.data
+}
+
+const EditPengajuanForm: React.FC<EditPengajuanProps> = ({ open, onClose, pengajuanId }) => {
   const { data: session } = useSession()
+  const queryClient = useQueryClient()
 
   const { register, handleSubmit, control, reset, setValue } = useForm<FormData>({
     defaultValues: {
       subject: '',
       keterangan: '',
-      detail_item: [{ id_produk: '', harga: '0' }]
+      detail_item: []
     }
   })
 
@@ -79,24 +105,40 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
     name: 'detail_item'
   })
 
-  // Fetch data produk dari API
-  const { data: produkList = [], isLoading: isLoadingProduk } = useQuery<Produk[]>({
-    queryKey: ['PengajuanProdukList'],
+  // Fetch daftar produk
+  const { data: productList, isLoading: isLoadingProduk } = useQuery({
+    queryKey: ['getProdukMaster'],
     queryFn: () => getProdukMaster(session?.accessToken ?? '', session?.refreshToken ?? ''),
-    staleTime: 1000 * 60 * 5,
-    refetchOnMount: false,
-    retry: false,
-    retryOnMount: false,
-    enabled: !!session?.accessToken
+    staleTime: 1000 * 60 * 10
   })
 
-  const queryClient = useQueryClient()
+  // Fetch data pengajuan dari API berdasarkan ID
+  const { isLoading, data: pengajuanData } = useQuery({
+    queryKey: ['pengajuan', pengajuanId],
+    queryFn: () => fetchPengajuanById(pengajuanId ?? '', session?.accessToken ?? '', session?.refreshToken ?? ''),
+    enabled: !!pengajuanId,
+    staleTime: 0
+  })
 
-  // Mutation untuk submit pengajuan
+  // Isi form saat data pengajuan tersedia
+  useEffect(() => {
+    if (pengajuanData) {
+      reset({
+        subject: pengajuanData.pengajuan.subject,
+        keterangan: pengajuanData.pengajuan.keterangan,
+        detail_item: pengajuanData.detail_item.map((item: any) => ({
+          id_produk: item.id_produk,
+          harga: item.harga.toString()
+        }))
+      })
+    }
+  }, [pengajuanData, reset])
+
+  // Mutation untuk update pengajuan
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await fetch(`/api/produk/pengajuan`, {
-        method: 'POST',
+      const response = await fetch(`/api/produk/pengajuan/${pengajuanId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session?.accessToken ?? ''}`,
@@ -106,27 +148,26 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update master')
+        throw new Error('Gagal mengupdate pengajuan')
       }
 
       return response.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['getProdukPengajuan'] })
-      reset()
       onClose()
     },
     onError: error => {
-      console.error('Gagal submit:', error)
-      alert('Gagal melakukan pengajuan.')
+      console.error('Gagal update:', error)
+      alert('Gagal melakukan update.')
     }
   })
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth='md'>
-      <DialogTitle>Form Penawaran</DialogTitle>
+      <DialogTitle>Edit Penawaran</DialogTitle>
       <DialogContent dividers>
-        {isLoadingProduk ? (
+        {isLoading ? (
           <CircularProgress />
         ) : (
           <form onSubmit={handleSubmit(data => mutation.mutate(data))}>
@@ -143,8 +184,8 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
               {...register('keterangan', { required: true })}
             />
 
-            {/* Dynamic Form for Items */}
-            <Typography variant='h6' sx={{ mt: 2 }}>
+            {/* Detail Item */}
+            <Typography variant='h6' sx={{ mt: 2, mb: 2 }}>
               Detail Item
             </Typography>
 
@@ -168,7 +209,7 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
                             field.onChange(selectedId)
 
                             // Cari produk yang sesuai dengan ID yang dipilih
-                            const selectedProduct = produkList?.find((p: any) => p.id_produk === selectedId)
+                            const selectedProduct = productList?.find((p: any) => p.id_produk === selectedId)
 
                             if (selectedProduct) {
                               setValue(`detail_item.${index}.harga`, selectedProduct.harga)
@@ -179,7 +220,7 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
                           {isLoadingProduk ? (
                             <MenuItem disabled>Loading...</MenuItem>
                           ) : (
-                            produkList?.map((produk: any) => (
+                            productList?.map((produk: any) => (
                               <MenuItem key={produk.id_produk} value={produk.id_produk}>
                                 {produk.nama}
                               </MenuItem>
@@ -211,8 +252,8 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
               </Grid>
             ))}
 
-            {/* Add Item Button */}
-            <Button variant='outlined' sx={{ mt: 2 }} onClick={() => append({ id_produk: '', harga: '' })}>
+            {/* Tambah Item */}
+            <Button variant='outlined' sx={{ mt: 2 }} onClick={() => append({ id_produk: '', harga: '0' })}>
               + Add Item
             </Button>
           </form>
@@ -221,15 +262,29 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
 
       {/* Submit & Close Buttons */}
       <DialogActions>
-        <Button onClick={onClose} color='secondary'>
+        <Button
+          onClick={() => {
+            reset({
+              subject: pengajuanData?.pengajuan.subject || '',
+              keterangan: pengajuanData?.pengajuan.keterangan || '',
+              detail_item:
+                pengajuanData?.detail_item.map((item: any) => ({
+                  id_produk: item.id_produk,
+                  harga: item.harga.toString()
+                })) || []
+            })
+            onClose()
+          }}
+          color='secondary'
+        >
           Batal
         </Button>
         <Button onClick={handleSubmit(data => mutation.mutate(data))} variant='contained' disabled={mutation.isPending}>
-          {mutation.isPending ? 'Submitting...' : 'Submit'}
+          {mutation.isPending ? 'Updating...' : 'Update'}
         </Button>
       </DialogActions>
     </Dialog>
   )
 }
 
-export default PengajuanForm
+export default EditPengajuanForm
