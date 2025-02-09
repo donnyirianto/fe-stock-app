@@ -7,8 +7,6 @@ import type { MouseEvent } from 'react'
 // Next Imports
 import { useRouter } from 'next/navigation'
 
-import { useDispatch } from 'react-redux'
-
 // MUI Imports
 import { styled } from '@mui/material/styles'
 import Badge from '@mui/material/Badge'
@@ -29,7 +27,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
 
-import { resetState } from '@/store/resetSlice'
+import { useSession, signOut } from 'next-auth/react'
 
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
@@ -45,6 +43,8 @@ const BadgeContentSpan = styled('span')({
 })
 
 const UserDropdown = () => {
+  const { data: session } = useSession()
+
   // States
   const [open, setOpen] = useState(false)
   const [openDialog, setOpenDialog] = useState(false)
@@ -76,24 +76,12 @@ const UserDropdown = () => {
     setOpen(false)
   }
 
-  const dispatch = useDispatch()
-
   const handleUserLogout = async () => {
     try {
       setOpen(false) // Close dialog first
 
       // Redirect to login page
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signout`, {
-        method: 'POST'
-      })
-
-      if (res.ok) {
-        // Redirect ke halaman login setelah logout berhasil
-        dispatch(resetState())
-        router.push('/login')
-      } else {
-        console.error('Failed to sign out:', await res.json())
-      }
+      await signOut({ redirect: true })
     } catch (error) {
       console.error('Error during sign out:', error)
     }
@@ -141,9 +129,9 @@ const UserDropdown = () => {
                     <Avatar alt='John Doe' src='/images/avatars/1.png' />
                     <div className='flex items-start flex-col'>
                       <Typography variant='body2' className='font-medium' color='text.primary'>
-                        admin
+                        {session?.user?.nama}
                       </Typography>
-                      <Typography variant='caption'>000000</Typography>
+                      <Typography variant='caption'>{session?.user?.username}</Typography>
                     </div>
                   </div>
                   <Divider className='mlb-1' />

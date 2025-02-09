@@ -1,11 +1,9 @@
 'use client'
 
 // React Imports
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
-import { useRouter } from 'next/navigation'
-
-import { useDispatch } from 'react-redux'
+import { signIn } from 'next-auth/react'
 
 // MUI Imports
 import Typography from '@mui/material/Typography'
@@ -31,9 +29,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 
 import type { z } from 'zod'
 
-import { useSession } from 'next-auth/react'
-
-import { login } from '@/store/auth/authSlice'
+//import { login } from '@/store/auth/authSlice'
 
 import type { Mode } from '@core/types'
 
@@ -50,7 +46,8 @@ import { useSettings } from '@core/hooks/useSettings'
 
 import { signInSchema } from '@/lib/zod'
 import ErrorMessage from '@/components/error-message'
-import { handleCredentialsSignin } from '@/app/api/auth/signin'
+
+//import { handleCredentialsSignin } from '@/app/api/auth/signin'
 
 const LoginV2 = ({ mode }: { mode: Mode }) => {
   // States
@@ -93,36 +90,18 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
     setOpenDialog(false)
   }
 
-  const { data: session, status } = useSession()
-
-  const dispatch = useDispatch()
-
-  const router = useRouter()
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      dispatch(login({ user: session?.user, tokenAccess: session?.accessToken, tokenRefresh: session?.refreshToken }))
-      router.push('/')
-    }
-  }, [session, status, router, dispatch])
-
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
     try {
       setIsLoading(true)
 
-      const res = await handleCredentialsSignin(values)
+      const res = await signIn('credentials', {
+        ...values,
+        redirect: true // ⬅️ Pastikan redirect tidak otomatis
+      })
 
-      if (res?.message) {
-        setGlobalError(res.message)
+      if (res?.error) {
+        setGlobalError(res.error)
         setOpenDialog(true)
-      } else {
-        const session = await fetch('/api/auth/session').then(res => res.json())
-
-        if (session?.user) {
-          dispatch(login({ user: session.user, tokenAccess: session.accessToken, tokenRefresh: session.refreshToken }))
-        }
-
-        router.push('/')
       }
     } catch (error: any) {
       setGlobalError(error.message)
