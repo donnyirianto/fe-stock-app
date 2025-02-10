@@ -40,10 +40,10 @@ const MasterListPage = () => {
     queryKey: ['getProdukMaster'],
     queryFn: () => getProdukMaster(session?.data?.accessToken ?? '', session?.data?.refreshToken ?? ''),
     select: data => data.data.produk,
-    staleTime: 1000 * 60 * 5,
-    refetchOnMount: false,
+    staleTime: 0,
+    refetchOnMount: true,
     retry: false,
-    retryOnMount: false,
+    retryOnMount: true,
     enabled: !!session?.data?.accessToken
   })
 
