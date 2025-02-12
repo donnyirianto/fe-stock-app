@@ -22,6 +22,7 @@ interface DetailItem {
   id_produk: string
   nama: string
   merk: string
+  tipe: string
   satuan: string
   harga: number
 }
@@ -174,6 +175,7 @@ const DetailPengajuanDialog: React.FC<DetailPengajuanDialogProps> = ({ open, onC
                         <th className='!bg-transparent'>ID</th>
                         <th className='!bg-transparent'>Nama Produk</th>
                         <th className='!bg-transparent'>Merk</th>
+                        <th className='!bg-transparent'>Tipe</th>
                         <th className='!bg-transparent'>Satuan</th>
                         <th className='!bg-transparent'>Harga</th>
                       </tr>
@@ -189,6 +191,9 @@ const DetailPengajuanDialog: React.FC<DetailPengajuanDialogProps> = ({ open, onC
                           </td>
                           <td>
                             <Typography color='text.primary'>{item.merk}</Typography>
+                          </td>
+                          <td>
+                            <Typography color='text.primary'>{item.tipe}</Typography>
                           </td>
                           <td>
                             <Typography color='text.primary'>{item.satuan}</Typography>
@@ -207,7 +212,7 @@ const DetailPengajuanDialog: React.FC<DetailPengajuanDialogProps> = ({ open, onC
                   <div className='flex flex-col gap-1 order-2 sm:order-[unset]'>
                     <div className='flex items-center gap-2'>
                       <Typography className='font-medium' color='text.primary'>
-                        Salesperson:
+                        Sales:
                       </Typography>
                       <Typography>{data?.pengajuan?.nama_user}</Typography>
                     </div>

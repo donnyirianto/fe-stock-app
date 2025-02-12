@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 
+import { ToastContainer, toast } from 'react-toastify'
+
 import { useSession, signOut } from 'next-auth/react'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -134,6 +136,25 @@ const EditPengajuanForm: React.FC<EditPengajuanProps> = ({ open, onClose, pengaj
     }
   }, [pengajuanData, reset])
 
+  const handleFormSubmit = (data: FormData) => {
+    if (data.detail_item.length === 0 || data.detail_item.some(item => !item.id_produk || !item.harga)) {
+      toast.warning('Pastikan item produk sudah terisi!', {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
+
+      return
+    }
+
+    mutation.mutate(data)
+  }
+
   // Mutation untuk update pengajuan
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -154,12 +175,30 @@ const EditPengajuanForm: React.FC<EditPengajuanProps> = ({ open, onClose, pengaj
       return response.json()
     },
     onSuccess: () => {
+      toast.success('Data penawaran berhasil diupdate!', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
       queryClient.invalidateQueries({ queryKey: ['getProdukPengajuan'] })
       onClose()
     },
-    onError: error => {
-      console.error('Gagal update:', error)
-      alert('Gagal melakukan update.')
+    onError: () => {
+      toast.error('Data penawaran Gagal diupdate!', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
     }
   })
 
@@ -170,7 +209,7 @@ const EditPengajuanForm: React.FC<EditPengajuanProps> = ({ open, onClose, pengaj
         {isLoading ? (
           <CircularProgress />
         ) : (
-          <form onSubmit={handleSubmit(data => mutation.mutate(data))}>
+          <form onSubmit={handleSubmit(handleFormSubmit)}>
             {/* Subject */}
             <TextField label='Subject' fullWidth margin='normal' {...register('subject', { required: true })} />
 
@@ -279,10 +318,11 @@ const EditPengajuanForm: React.FC<EditPengajuanProps> = ({ open, onClose, pengaj
         >
           Batal
         </Button>
-        <Button onClick={handleSubmit(data => mutation.mutate(data))} variant='contained' disabled={mutation.isPending}>
+        <Button onClick={handleSubmit(handleFormSubmit)} variant='contained' disabled={mutation.isPending}>
           {mutation.isPending ? 'Updating...' : 'Update'}
         </Button>
       </DialogActions>
+      <ToastContainer />
     </Dialog>
   )
 }

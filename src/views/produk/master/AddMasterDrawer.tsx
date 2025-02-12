@@ -3,6 +3,8 @@ import { useState } from 'react'
 
 import { useSession } from 'next-auth/react'
 
+import { ToastContainer, toast } from 'react-toastify'
+
 // MUI Imports
 import Button from '@mui/material/Button'
 import Drawer from '@mui/material/Drawer'
@@ -30,6 +32,7 @@ type FormValidateType = {
   merk: string
   id_produk: string
   satuan: string
+  tipe: string
   harga: string
 }
 
@@ -51,9 +54,29 @@ const AddMasterDrawer = (props: Props) => {
       merk: '',
       satuan: '',
       id_produk: '',
-      harga: ''
+      harga: '',
+      tipe: ''
     }
   })
+
+  const handleFormSubmit = (data: MasterDataType) => {
+    if (data.nama == '' || data.id_produk == '' || data.merk == '' || data.satuan == '' || data.tipe == '') {
+      toast.warning('Pastikan form sudah terisi!', {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
+
+      return
+    }
+
+    addMasterMutation.mutate(data)
+  }
 
   const addMasterMutation = useMutation({
     mutationFn: async (newMaster: MasterDataType) => {
@@ -74,6 +97,17 @@ const AddMasterDrawer = (props: Props) => {
       return response.json()
     },
     onSuccess: () => {
+      toast.success('Data Produk berhasil ditambahkan!', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
+
       // Invalidate query agar data master di-refresh setelah sukses tambah
       queryClient.invalidateQueries({ queryKey: ['getProdukMaster'] })
 
@@ -81,8 +115,17 @@ const AddMasterDrawer = (props: Props) => {
       handleClose()
       resetForm()
     },
-    onError: (error: any) => {
-      setErrorMessage(error.message)
+    onError: () => {
+      toast.error('Data Produk Gagal ditambahkan!', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
     }
   })
 
@@ -108,7 +151,7 @@ const AddMasterDrawer = (props: Props) => {
       </div>
       <Divider />
       <div className='p-5'>
-        <form onSubmit={handleSubmit(data => addMasterMutation.mutate(data))} className='flex flex-col gap-5'>
+        <form onSubmit={handleSubmit(handleFormSubmit)} className='flex flex-col gap-5'>
           <Controller
             name='id_produk'
             control={control}
@@ -150,6 +193,22 @@ const AddMasterDrawer = (props: Props) => {
                 label='Merk'
                 placeholder='Merk'
                 error={Boolean(errors.merk)}
+                helperText={errors.merk && 'This field is required.'}
+              />
+            )}
+          />
+
+          <Controller
+            name='tipe'
+            control={control}
+            rules={{ required: true }}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label='Tipe'
+                placeholder='Tipe'
+                error={Boolean(errors.tipe)}
                 helperText={errors.merk && 'This field is required.'}
               />
             )}
@@ -208,6 +267,8 @@ const AddMasterDrawer = (props: Props) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ToastContainer />
     </Drawer>
   )
 }

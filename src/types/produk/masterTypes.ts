@@ -4,4 +4,5 @@ export type MasterDataType = {
   merk?: string
   satuan?: string
   harga?: string
+  tipe?: string
 }

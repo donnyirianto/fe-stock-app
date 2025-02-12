@@ -95,10 +95,17 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
   })
 
   const handleFormSubmit = (data: FormData) => {
-    console.log('Validating:', data) // Debugging
-
     if (data.detail_item.length === 0 || data.detail_item.some(item => !item.id_produk || !item.harga)) {
-      toast.warning('Pastikan item produk sudah terisi!')
+      toast.warning('Pastikan item produk sudah terisi!', {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
 
       return
     }
@@ -111,6 +118,17 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
   // Mutation untuk submit pengajuan
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
+      toast.info('Proses simpan data penawaran!', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
+
       const response = await fetch(`/api/produk/pengajuan`, {
         method: 'POST',
         headers: {
@@ -128,13 +146,31 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
       return response.json()
     },
     onSuccess: () => {
-      toast.info('Penawaran sukses diajuakan!')
+      toast.success('Data penawaran berhasil dibuat!', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
       queryClient.invalidateQueries({ queryKey: ['getProdukPengajuan'] })
       reset()
       onClose()
     },
-    onError: error => {
-      toast.info(`Error: ${error}`)
+    onError: () => {
+      toast.error('Data penawaran Gagal dibuat!', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
     }
   })
 
