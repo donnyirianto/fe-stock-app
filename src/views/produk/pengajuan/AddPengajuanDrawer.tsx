@@ -2,6 +2,10 @@ import { useSession, signOut } from 'next-auth/react'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { toast } from 'react-toastify'
+
+import 'react-toastify/dist/ReactToastify.css'
+
 import {
   Dialog,
   DialogTitle,
@@ -90,6 +94,16 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
     enabled: !!session?.accessToken
   })
 
+  const handleFormSubmit = (data: FormData) => {
+    if (data.detail_item.length === 0 || data.detail_item.some(item => !item.id_produk || !item.harga)) {
+      toast.warning('Harap isi detail item dengan benar sebelum submit.')
+
+      return
+    }
+
+    mutation.mutate(data)
+  }
+
   const queryClient = useQueryClient()
 
   // Mutation untuk submit pengajuan
@@ -129,7 +143,7 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
         {isLoadingProduk ? (
           <CircularProgress />
         ) : (
-          <form onSubmit={handleSubmit(data => mutation.mutate(data))}>
+          <form onSubmit={handleSubmit(handleFormSubmit)}>
             {/* Subject */}
             <TextField label='Subject' fullWidth margin='normal' {...register('subject', { required: true })} />
 
@@ -224,7 +238,7 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
         <Button onClick={onClose} color='secondary'>
           Batal
         </Button>
-        <Button onClick={handleSubmit(data => mutation.mutate(data))} variant='contained' disabled={mutation.isPending}>
+        <Button onClick={handleSubmit(handleFormSubmit)} variant='contained' disabled={mutation.isPending}>
           {mutation.isPending ? 'Submitting...' : 'Submit'}
         </Button>
       </DialogActions>
