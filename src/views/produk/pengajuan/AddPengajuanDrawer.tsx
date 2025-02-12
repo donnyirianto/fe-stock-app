@@ -2,7 +2,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { toast } from 'react-toastify'
+import { ToastContainer, toast } from 'react-toastify'
 
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -95,8 +95,10 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
   })
 
   const handleFormSubmit = (data: FormData) => {
+    console.log('Validating:', data) // Debugging
+
     if (data.detail_item.length === 0 || data.detail_item.some(item => !item.id_produk || !item.harga)) {
-      toast.warning('Harap isi detail item dengan benar sebelum submit.')
+      toast.warning('Pastikan item produk sudah terisi!')
 
       return
     }
@@ -126,13 +128,13 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
       return response.json()
     },
     onSuccess: () => {
+      toast.info('Penawaran sukses diajuakan!')
       queryClient.invalidateQueries({ queryKey: ['getProdukPengajuan'] })
       reset()
       onClose()
     },
     onError: error => {
-      console.error('Gagal submit:', error)
-      alert('Gagal melakukan pengajuan.')
+      toast.info(`Error: ${error}`)
     }
   })
 
@@ -242,6 +244,7 @@ const PengajuanForm: React.FC<PengajuanFormProps> = ({ open, onClose }) => {
           {mutation.isPending ? 'Submitting...' : 'Submit'}
         </Button>
       </DialogActions>
+      <ToastContainer />
     </Dialog>
   )
 }
