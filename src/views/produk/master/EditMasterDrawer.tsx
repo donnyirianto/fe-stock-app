@@ -7,6 +7,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { DialogActions, DialogContent, DialogTitle, Button, TextField, Drawer } from '@mui/material'
 
+import { ToastContainer, toast } from 'react-toastify'
+
 // Types
 import type { MasterDataType } from '@/types/produk/masterTypes'
 
@@ -59,6 +61,7 @@ export default function EditMasterDrawer({ open, onClose, masterId }: EditMaster
         nama: masterData.nama || '',
         id_produk: masterData.id_produk || '',
         merk: masterData.merk || '',
+        tipe: masterData.tipe || '',
         satuan: masterData.satuan || '',
         harga: masterData.harga || '0'
       })
@@ -87,9 +90,31 @@ export default function EditMasterDrawer({ open, onClose, masterId }: EditMaster
       return response.json()
     },
     onSuccess: () => {
+      toast.success('Data Produk berhasil diupdate!', {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
       queryClient.invalidateQueries({ queryKey: ['getProdukMaster'] })
       onClose()
       reset()
+    },
+    onError: () => {
+      toast.error('Data Produk Gagal diupdate!', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored'
+      })
     }
   })
 
@@ -109,6 +134,7 @@ export default function EditMasterDrawer({ open, onClose, masterId }: EditMaster
               <TextField label='ID Produk' fullWidth margin='normal' {...register('id_produk', { required: true })} />
               <TextField label='Nama' fullWidth margin='normal' {...register('nama', { required: true })} />
               <TextField label='Merk' fullWidth margin='normal' {...register('merk', { required: true })} />
+              <TextField label='Tipe' fullWidth margin='normal' {...register('tipe', { required: true })} />
               <TextField label='Satuan' fullWidth margin='normal' {...register('satuan', { required: true })} />
               <TextField label='Harga' fullWidth margin='normal' {...register('harga', { required: true })} />
             </>
@@ -123,6 +149,8 @@ export default function EditMasterDrawer({ open, onClose, masterId }: EditMaster
           </Button>
         </DialogActions>
       </form>
+
+      <ToastContainer />
     </Drawer>
   )
 }

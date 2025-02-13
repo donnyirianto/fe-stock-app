@@ -182,6 +182,10 @@ const MasterListTable = ({ tableData }: { tableData?: MasterDataType[] }) => {
       header: 'Merk',
       cell: ({ row }) => <Typography>{row.original.merk}</Typography>
     }),
+    columnHelper.accessor('tipe', {
+      header: 'Tipe',
+      cell: ({ row }) => <Typography>{row.original.tipe}</Typography>
+    }),
 
     columnHelper.accessor('satuan', {
       header: 'Satuan',
